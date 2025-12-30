@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Passive Income Playbook</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1e3a8a;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-dark: #0a0e1a;
+            --bg-card: #1a1f2e;
+            --text: #F1F5F9;
+            --text-muted: #94A3B8;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        .header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* STATS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* SEARCH BAR */
+        .search-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* TABLE */
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .table-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        th {
+            text-align: left;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .email {
+            color: var(--primary);
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text);
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .detail-row {
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .detail-value {
+            font-size: 15px;
+            color: var(--text);
+            word-wrap: break-word;
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* LOADING */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid rgba(59, 130, 246, 0.2);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-bar {
+                flex-direction: column;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            th, td {
+                padding: 12px 15px;
+            }
+
+            .actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn-small {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+
+            .stat-card {
+                padding: 20px;
+            }
+
+            .stat-value {
+                font-size: 28px;
+            }
+
+            th {
+                font-size: 11px;
+                padding: 10px;
+            }
+
+            td {
+                font-size: 13px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">📊 Admin Dashboard</div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="refreshData()">
+                    🔄 Refresh
+                </button>
+                <button class="btn btn-primary" onclick="exportCSV()">
+                    📥 Export CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+        <!-- STATS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Responses</div>
+                <div class="stat-value" id="statTotal">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Today's Responses</div>
+                <div class="stat-value" id="statToday">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Unique Emails</div>
+                <div class="stat-value" id="statUnique">0</div>
+            </div>
+        </div>
+
+        <!-- SEARCH BAR -->
+        <div class="search-bar">
+            <input 
+                type="text" 
+                class="search-input" 
+                id="searchInput" 
+                placeholder="Search by name or email..." 
+                onkeyup="handleSearch()"
+            >
+            <button class="btn btn-secondary" onclick="clearSearch()">Clear</button>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-container">
+            <div class="table-header">
+                <div class="table-title">All Responses</div>
+                <div id="responseCount">0 responses</div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Loading responses...</div>
+            </div>
+
+            <div class="table-responsive" id="tableContainer" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-state-icon">📭</div>
+                <div class="empty-state-title">No responses yet</div>
+                <div class="empty-state-text">Responses will appear here when users complete the questionnaire</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">Response Details</div>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Automatically detect if running locally or on Render
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000/api' 
+            : '/api';
+        let allResponses = [];
+
+        // LOAD DATA ON PAGE LOAD
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadResponses();
+            setInterval(loadStats, 30000); // Auto-refresh stats every 30 seconds
+        });
+
+        // LOAD STATISTICS
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/stats`);
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('statTotal').textContent = data.stats.total || 0;
+                    document.getElementById('statToday').textContent = data.stats.today || 0;
+                    document.getElementById('statUnique').textContent = data.stats.uniqueEmails || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // LOAD ALL RESPONSES
+        async function loadResponses() {
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('tableContainer').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_URL}/responses`);
+                const data = await response.json();
+
+                document.getElementById('loading').classList.remove('active');
+
+                if (data.success && data.responses.length > 0) {
+                    allResponses = data.responses;
+                    renderTable(allResponses);
+                } else {
+                    document.getElementById('emptyState').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading responses:', error);
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('emptyState').style.display = 'block';
+            }
+        }
+
+        // RENDER TABLE
+        function renderTable(responses) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            document.getElementById('responseCount').textContent = `${responses.length} responses`;
+            document.getElementById('tableContainer').style.display = 'block';
+
+            responses.forEach(response => {
+                const row = document.createElement('tr');
+                
+                const date = new Date(response.submitted_at);
+                const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+
+                row.innerHTML = `
+                    <td>#${response.id}</td>
+                    <td>${response.first_name}</td>
+                    <td class="email">${response.email}</td>
+                    <td>${formattedDate}</td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn btn-small btn-primary" onclick="viewResponse(${response.id})">
+                                View
+                            </button>
+                            <button class="btn btn-small btn-danger" onclick="deleteResponse(${response.id})">
+                                Delete
+                            </button>
+                        </div>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // VIEW RESPONSE DETAILS
+        async function viewResponse(id) {
+            try {
+                const response = await fetch(`${API_URL}/responses/${id}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const r = data.response;
+                    const date = new Date(r.submitted_at);
+                    
+                    document.getElementById('modalBody').innerHTML = `
+                        <div class="detail-row">
+                            <div class="detail-label">Response ID</div>
+                            <div class="detail-value">#${r.id}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">First Name</div>
+                            <div class="detail-value">${r.first_name}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Email</div>
+                            <div class="detail-value">${r.email}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Question 1: Real Estate Experience</div>
+                            <div class="detail-value">${r.question_1 || 'Not answered'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Question 2: Biggest Challenge</div>
+                            <div class="detail-value">${r.question_2 || 'Not answered'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Question 3: Primary Goal</div>
+                            <div class="detail-value">${r.question_3 || 'Not answered'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Question 4: Time Commitment</div>
+                            <div class="detail-value">${r.question_4 || 'Not answered'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Question 5: Timeline</div>
+                            <div class="detail-value">${r.question_5 || 'Not answered'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Submitted At</div>
+                            <div class="detail-value">${date.toLocaleDateString()} ${date.toLocaleTimeString()}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">IP Address</div>
+                            <div class="detail-value">${r.ip_address}</div>
+                        </div>
+                    `;
+
+                    document.getElementById('modalOverlay').classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error fetching response:', error);
+                alert('Error loading response details');
+            }
+        }
+
+        // DELETE RESPONSE
+        async function deleteResponse(id) {
+            if (!confirm('Are you sure you want to delete this response?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/responses/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Response deleted successfully');
+                    refreshData();
+                } else {
+                    alert('Error deleting response');
+                }
+            } catch (error) {
+                console.error('Error deleting response:', error);
+                alert('Error deleting response');
+            }
+        }
+
+        // SEARCH
+        let searchTimeout;
+        function handleSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = document.getElementById('searchInput').value.trim();
+                
+                if (query === '') {
+                    renderTable(allResponses);
+                    return;
+                }
+
+                const filtered = allResponses.filter(r => 
+                    r.first_name.toLowerCase().includes(query.toLowerCase()) ||
+                    r.email.toLowerCase().includes(query.toLowerCase())
+                );
+
+                renderTable(filtered);
+            }, 300);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            renderTable(allResponses);
+        }
+
+        // EXPORT CSV
+        function exportCSV() {
+            window.location.href = `${API_URL}/export/csv`;
+        }
+
+        // REFRESH DATA
+        function refreshData() {
+            loadStats();
+            loadResponses();
+        }
+
+        // CLOSE MODAL
+        function closeModal(event) {
+            if (!event || event.target.id === 'modalOverlay') {
+                document.getElementById('modalOverlay').classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>
