@@ -310,7 +310,34 @@ app.get('/api/export/csv', (req, res) => {
 // ===================================
 
 app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin-dashboard.html'));
+    // First, let's just test if the route works at all
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Admin Dashboard Test</title>
+            <style>
+                body { 
+                    background: #0a0e1a; 
+                    color: white; 
+                    font-family: Arial; 
+                    padding: 50px;
+                    text-align: center;
+                }
+                h1 { color: #3b82f6; }
+            </style>
+        </head>
+        <body>
+            <h1>✅ Admin Route is Working!</h1>
+            <p>Server is running correctly on Render.</p>
+            <p>Now checking for admin-dashboard.html file...</p>
+            <hr>
+            <p><strong>Files in directory:</strong></p>
+            <pre>${require('fs').readdirSync(__dirname).join('\\n')}</pre>
+        </body>
+        </html>
+    `);
+});
 });
 
 // ===================================
