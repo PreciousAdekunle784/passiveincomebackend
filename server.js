@@ -146,35 +146,60 @@ app.get('/api/responses/:id', (req, res) => {
 app.get('/api/stats', (req, res) => {
     const queries = {
         total: 'SELECT COUNT(*) as count FROM responses',
-        today: `SELECT COUNT(*) as count FROM responses WHERE DATE(submitted_at) = DATE('now')`,
+        today: `SELECT COUNT(*) as count FROM responses WHERE DATE(submitted_at) = DATE('now', 'localtime')`,
         unique: 'SELECT COUNT(DISTINCT email) as count FROM responses'
     };
 
     db.get(queries.total, [], (err, totalResult) => {
         if (err) {
+            console.error('❌ Stats error (total):', err);
             return res.status(500).json({ success: false, message: 'Database error' });
         }
 
+        console.log('📊 Total responses:', totalResult);
+
         db.get(queries.today, [], (err, todayResult) => {
             if (err) {
+                console.error('❌ Stats error (today):', err);
                 return res.status(500).json({ success: false, message: 'Database error' });
             }
 
+            console.log('📊 Today responses:', todayResult);
+
             db.get(queries.unique, [], (err, uniqueResult) => {
                 if (err) {
+                    console.error('❌ Stats error (unique):', err);
                     return res.status(500).json({ success: false, message: 'Database error' });
                 }
+
+                console.log('📊 Unique emails:', uniqueResult);
 
                 res.json({
                     success: true,
                     stats: {
-                        totalResponses: totalResult.count,
-                        todayResponses: todayResult.count,
-                        uniqueEmails: uniqueResult.count
+                        totalResponses: totalResult ? totalResult.count : 0,
+                        todayResponses: todayResult ? todayResult.count : 0,
+                        uniqueEmails: uniqueResult ? uniqueResult.count : 0
                     }
                 });
             });
         });
+    });
+});
+
+// Debug endpoint - see raw dates
+app.get('/api/debug/dates', (req, res) => {
+    const sql = `SELECT id, first_name, email, submitted_at, 
+                 DATE(submitted_at) as date_only,
+                 DATE('now') as today_utc,
+                 DATE('now', 'localtime') as today_local
+                 FROM responses`;
+    
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ rows });
     });
 });
 
