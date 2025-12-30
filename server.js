@@ -1,12 +1,13 @@
 // ===================================
 // PASSIVE INCOME PLAYBOOK - BACKEND SERVER
-// Complete Node.js + SQLite Backend System
+// Simplified version with embedded admin dashboard
 // ===================================
 
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,7 +19,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
 
 // ===================================
 // DATABASE SETUP (SQLite)
@@ -49,7 +49,7 @@ db.run(`
     )
 `, (err) => {
     if (err) {
-        console.error('❌ Table creation error:', err.message);
+        console.error('❌ Error creating table:', err.message);
     } else {
         console.log('✅ Database table ready');
     }
@@ -59,23 +59,10 @@ db.run(`
 // API ENDPOINTS
 // ===================================
 
-// 1. SUBMIT QUESTIONNAIRE RESPONSE
+// Submit questionnaire response
 app.post('/api/submit-questionnaire', (req, res) => {
-    const {
-        firstName,
-        email,
-        question1,
-        question2,
-        question3,
-        question4,
-        question5
-    } = req.body;
+    const { firstName, email, question1, question2, question3, question4, question5 } = req.body;
 
-    // Get IP address and user agent
-    const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'];
-
-    // Validate required fields
     if (!firstName || !email) {
         return res.status(400).json({
             success: false,
@@ -83,62 +70,37 @@ app.post('/api/submit-questionnaire', (req, res) => {
         });
     }
 
-    // Insert into database
-    const sql = `
-        INSERT INTO responses 
-        (first_name, email, question_1, question_2, question_3, question_4, question_5, ip_address, user_agent)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
 
-    db.run(sql, [
-        firstName,
-        email,
-        question1 || null,
-        question2 || null,
-        question3 || null,
-        question4 || null,
-        question5 || null,
-        ipAddress,
-        userAgent
-    ], function(err) {
+    const sql = `INSERT INTO responses (first_name, email, question_1, question_2, question_3, question_4, question_5, ip_address, user_agent)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    db.run(sql, [firstName, email, question1, question2, question3, question4, question5, ip, userAgent], function(err) {
         if (err) {
-            console.error('❌ Insert error:', err.message);
+            console.error('❌ Database insert error:', err.message);
             return res.status(500).json({
                 success: false,
                 message: 'Failed to save response'
             });
         }
 
-        console.log(`✅ New response saved - ID: ${this.lastID}`);
+        console.log(`✅ New response saved! ID: ${this.lastID}`);
         res.json({
             success: true,
-            responseId: this.lastID,
-            message: 'Response saved successfully'
+            message: 'Response saved successfully',
+            responseId: this.lastID
         });
     });
 });
 
-// 2. GET ALL RESPONSES
+// Get all responses
 app.get('/api/responses', (req, res) => {
-    const sql = `
-        SELECT 
-            id,
-            first_name,
-            email,
-            question_1,
-            question_2,
-            question_3,
-            question_4,
-            question_5,
-            submitted_at,
-            ip_address
-        FROM responses
-        ORDER BY submitted_at DESC
-    `;
+    const sql = 'SELECT * FROM responses ORDER BY submitted_at DESC';
 
     db.all(sql, [], (err, rows) => {
         if (err) {
-            console.error('❌ Query error:', err.message);
+            console.error('❌ Database query error:', err.message);
             return res.status(500).json({
                 success: false,
                 message: 'Failed to fetch responses'
@@ -153,17 +115,13 @@ app.get('/api/responses', (req, res) => {
     });
 });
 
-// 3. GET SINGLE RESPONSE BY ID
+// Get single response
 app.get('/api/responses/:id', (req, res) => {
-    const { id } = req.params;
+    const sql = 'SELECT * FROM responses WHERE id = ?';
 
-    const sql = `
-        SELECT * FROM responses WHERE id = ?
-    `;
-
-    db.get(sql, [id], (err, row) => {
+    db.get(sql, [req.params.id], (err, row) => {
         if (err) {
-            console.error('❌ Query error:', err.message);
+            console.error('❌ Database query error:', err.message);
             return res.status(500).json({
                 success: false,
                 message: 'Failed to fetch response'
@@ -184,58 +142,55 @@ app.get('/api/responses/:id', (req, res) => {
     });
 });
 
-// 4. GET STATISTICS
+// Get statistics
 app.get('/api/stats', (req, res) => {
     const queries = {
         total: 'SELECT COUNT(*) as count FROM responses',
-        today: `SELECT COUNT(*) as count FROM responses 
-                WHERE DATE(submitted_at) = DATE('now')`,
-        uniqueEmails: 'SELECT COUNT(DISTINCT email) as count FROM responses'
+        today: `SELECT COUNT(*) as count FROM responses WHERE DATE(submitted_at) = DATE('now')`,
+        unique: 'SELECT COUNT(DISTINCT email) as count FROM responses'
     };
 
-    const stats = {};
-    let completed = 0;
+    db.get(queries.total, [], (err, totalResult) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Database error' });
+        }
 
-    Object.keys(queries).forEach(key => {
-        db.get(queries[key], [], (err, row) => {
-            if (!err) {
-                stats[key] = row.count;
+        db.get(queries.today, [], (err, todayResult) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Database error' });
             }
-            completed++;
 
-            if (completed === Object.keys(queries).length) {
+            db.get(queries.unique, [], (err, uniqueResult) => {
+                if (err) {
+                    return res.status(500).json({ success: false, message: 'Database error' });
+                }
+
                 res.json({
                     success: true,
-                    stats: stats
+                    stats: {
+                        totalResponses: totalResult.count,
+                        todayResponses: todayResult.count,
+                        uniqueEmails: uniqueResult.count
+                    }
                 });
-            }
+            });
         });
     });
 });
 
-// 5. DELETE RESPONSE
+// Delete response
 app.delete('/api/responses/:id', (req, res) => {
-    const { id } = req.params;
-
     const sql = 'DELETE FROM responses WHERE id = ?';
 
-    db.run(sql, [id], function(err) {
+    db.run(sql, [req.params.id], function(err) {
         if (err) {
-            console.error('❌ Delete error:', err.message);
+            console.error('❌ Database delete error:', err.message);
             return res.status(500).json({
                 success: false,
                 message: 'Failed to delete response'
             });
         }
 
-        if (this.changes === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Response not found'
-            });
-        }
-
-        console.log(`✅ Response deleted - ID: ${id}`);
         res.json({
             success: true,
             message: 'Response deleted successfully'
@@ -243,28 +198,16 @@ app.delete('/api/responses/:id', (req, res) => {
     });
 });
 
-// 6. SEARCH RESPONSES
+// Search responses
 app.get('/api/search', (req, res) => {
-    const { query } = req.query;
+    const query = req.query.query || '';
+    const sql = `SELECT * FROM responses 
+                 WHERE first_name LIKE ? OR email LIKE ? 
+                 ORDER BY submitted_at DESC`;
 
-    if (!query) {
-        return res.status(400).json({
-            success: false,
-            message: 'Search query is required'
-        });
-    }
-
-    const sql = `
-        SELECT * FROM responses
-        WHERE first_name LIKE ? OR email LIKE ?
-        ORDER BY submitted_at DESC
-    `;
-
-    const searchPattern = `%${query}%`;
-
-    db.all(sql, [searchPattern, searchPattern], (err, rows) => {
+    db.all(sql, [`%${query}%`, `%${query}%`], (err, rows) => {
         if (err) {
-            console.error('❌ Search error:', err.message);
+            console.error('❌ Database search error:', err.message);
             return res.status(500).json({
                 success: false,
                 message: 'Search failed'
@@ -279,65 +222,100 @@ app.get('/api/search', (req, res) => {
     });
 });
 
-// 7. EXPORT TO CSV
+// Export to CSV
 app.get('/api/export/csv', (req, res) => {
     const sql = 'SELECT * FROM responses ORDER BY submitted_at DESC';
 
     db.all(sql, [], (err, rows) => {
         if (err) {
-            console.error('❌ Export error:', err.message);
-            return res.status(500).json({
-                success: false,
-                message: 'Export failed'
-            });
+            console.error('❌ Database export error:', err.message);
+            return res.status(500).send('Export failed');
         }
 
-        // Generate CSV
-        let csv = 'ID,First Name,Email,Question 1,Question 2,Question 3,Question 4,Question 5,Submitted At,IP Address\n';
+        let csv = 'ID,First Name,Email,Question 1,Question 2,Question 3,Question 4,Question 5,Submitted At,IP Address,User Agent\n';
 
         rows.forEach(row => {
-            csv += `${row.id},"${row.first_name}","${row.email}","${row.question_1 || ''}","${row.question_2 || ''}","${row.question_3 || ''}","${row.question_4 || ''}","${row.question_5 || ''}","${row.submitted_at}","${row.ip_address}"\n`;
+            csv += `${row.id},"${row.first_name}","${row.email}","${row.question_1 || ''}","${row.question_2 || ''}","${row.question_3 || ''}","${row.question_4 || ''}","${row.question_5 || ''}","${row.submitted_at}","${row.ip_address || ''}","${row.user_agent || ''}"\n`;
         });
 
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename=responses.csv');
+        res.header('Content-Type', 'text/csv');
+        res.header('Content-Disposition', 'attachment; filename="responses.csv"');
         res.send(csv);
     });
 });
 
 // ===================================
-// SERVE ADMIN DASHBOARD
+// ADMIN DASHBOARD (Check if file exists, otherwise show test page)
 // ===================================
 
 app.get('/admin', (req, res) => {
-    // First, let's just test if the route works at all
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Admin Dashboard Test</title>
-            <style>
-                body { 
-                    background: #0a0e1a; 
-                    color: white; 
-                    font-family: Arial; 
-                    padding: 50px;
-                    text-align: center;
-                }
-                h1 { color: #3b82f6; }
-            </style>
-        </head>
-        <body>
-            <h1>✅ Admin Route is Working!</h1>
-            <p>Server is running correctly on Render.</p>
-            <p>Now checking for admin-dashboard.html file...</p>
-            <hr>
-            <p><strong>Files in directory:</strong></p>
-            <pre>${require('fs').readdirSync(__dirname).join('\\n')}</pre>
-        </body>
-        </html>
-    `);
-});
+    const adminPath = path.join(__dirname, 'admin-dashboard.html');
+    
+    // Check if file exists
+    if (fs.existsSync(adminPath)) {
+        res.sendFile(adminPath);
+    } else {
+        // File doesn't exist, show diagnostic page
+        const files = fs.readdirSync(__dirname);
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Admin Dashboard - File Check</title>
+                <style>
+                    body { 
+                        background: #0a0e1a; 
+                        color: #fff; 
+                        font-family: 'Courier New', monospace; 
+                        padding: 40px;
+                        line-height: 1.6;
+                    }
+                    h1 { color: #ef4444; }
+                    h2 { color: #3b82f6; margin-top: 30px; }
+                    pre { 
+                        background: #1a1f2e; 
+                        padding: 20px; 
+                        border-radius: 8px;
+                        border-left: 4px solid #3b82f6;
+                        overflow-x: auto;
+                    }
+                    .success { color: #10b981; }
+                    .error { color: #ef4444; }
+                    .info { color: #f59e0b; }
+                </style>
+            </head>
+            <body>
+                <h1>⚠️ Admin Dashboard File Not Found</h1>
+                <p class="error">The file <code>admin-dashboard.html</code> is missing from the server.</p>
+                
+                <h2>📂 Files in Current Directory:</h2>
+                <pre>${files.join('\n')}</pre>
+                
+                <h2>📍 Current Directory Path:</h2>
+                <pre>${__dirname}</pre>
+                
+                <h2>✅ Server Status:</h2>
+                <p class="success">✓ Server is running correctly</p>
+                <p class="success">✓ API endpoints are working</p>
+                <p class="error">✗ admin-dashboard.html needs to be uploaded to GitHub</p>
+                
+                <h2>🔧 How to Fix:</h2>
+                <ol>
+                    <li>Download <code>admin-dashboard.html</code> from your files</li>
+                    <li>Go to your GitHub repository</li>
+                    <li>Click "Add file" → "Upload files"</li>
+                    <li>Upload <code>admin-dashboard.html</code></li>
+                    <li>Commit changes</li>
+                    <li>Wait 2 minutes for auto-redeploy</li>
+                    <li>Refresh this page</li>
+                </ol>
+                
+                <h2>🧪 Test API Endpoint:</h2>
+                <p><a href="/api/stats" style="color: #3b82f6;">Click here to test /api/stats</a></p>
+            </body>
+            </html>
+        `);
+    }
 });
 
 // ===================================
@@ -350,27 +328,16 @@ app.get('/', (req, res) => {
         message: 'Passive Income Playbook API Server',
         version: '1.0.0',
         endpoints: {
-            submit: 'POST /api/submit-questionnaire',
-            getAll: 'GET /api/responses',
-            getOne: 'GET /api/responses/:id',
-            stats: 'GET /api/stats',
-            delete: 'DELETE /api/responses/:id',
-            search: 'GET /api/search?query=name',
-            export: 'GET /api/export/csv',
-            admin: 'GET /admin'
+            admin: 'GET /admin',
+            api: 'GET /api',
+            submitQuestionnaire: 'POST /api/submit-questionnaire',
+            getResponses: 'GET /api/responses',
+            getResponse: 'GET /api/responses/:id',
+            getStats: 'GET /api/stats',
+            deleteResponse: 'DELETE /api/responses/:id',
+            search: 'GET /api/search?query=term',
+            exportCSV: 'GET /api/export/csv'
         }
-    });
-});
-
-// ===================================
-// ERROR HANDLING
-// ===================================
-
-app.use((err, req, res, next) => {
-    console.error('❌ Server error:', err.stack);
-    res.status(500).json({
-        success: false,
-        message: 'Internal server error'
     });
 });
 
